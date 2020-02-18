@@ -7,7 +7,8 @@
     "build": "npm run clean && tsc",
     "clean": "rimraf ./dist ./.cache ./lib",
     "deploy": "npm run build && gh-pages -d dist",
-    "test": "jest"
+    "test": "jest",
+    "publish": "git push --tags && npm publish"
   },
   "keywords": [
     "TypeScript",
