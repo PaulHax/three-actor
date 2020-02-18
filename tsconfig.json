@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "declaration": true,
+    "outDir": "dist",
+    "sourceMap": true,
+    "baseUrl": ".", // This must be specified if "paths" is.
+    "paths": {
+      "three": [ //when running tsc or jest, tells src/somecode.ts where to find peer depependancy three
+        "test/node_modules/three"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    ".cache"
+  ]
+}

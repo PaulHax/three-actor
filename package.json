@@ -1,0 +1,50 @@
+{
+  "name": "three-actor",
+  "version": "1.0.0",
+  "description": "Character framework for three.js",
+  "scripts": {
+    "start": "npm run clean && parcel test/TestActor.html",
+    "build": "npm run clean && tsc",
+    "clean": "rimraf ./dist ./.cache",
+    "deploy": "npm run build && gh-pages -d dist",
+    "test": "jest"
+  },
+  "keywords": [
+    "TypeScript",
+    "ThreeJs",
+    "Three.js"
+  ],
+  "author": "Paul Elliott",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^25.1.1",
+    "@types/node": "^13.5.3",
+    "@typescript-eslint/eslint-plugin": "^2.18.0",
+    "@typescript-eslint/parser": "^2.18.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "gh-pages": "^2.2.0",
+    "jest": "^25.1.0",
+    "parcel-bundler": "^1.12.4",
+    "parcel-plugin-static-files-copy": "^2.3.1",
+    "prettier": "^1.19.1",
+    "rimraf": "^3.0.0",
+    "ts-jest": "^25.1.0",
+    "typescript": "^3.7.5"
+  },
+  "peerDependencies": {
+    "three": "*"
+  },
+  "staticFiles": {
+    "staticPath": [
+      {
+        "staticPath": "assets",
+        "staticOutDir": "assets"
+      }
+    ]
+  },
+  "dependencies": {
+    "three": "^0.113.2"
+  }
+}
