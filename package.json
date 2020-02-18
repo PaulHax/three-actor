@@ -1,6 +1,6 @@
 {
   "name": "three-actor",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Character framework for three.js",
   "scripts": {
     "start": "npm run clean && parcel test/TestActor.html",
