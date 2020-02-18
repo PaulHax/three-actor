@@ -4,18 +4,17 @@ Character framework for three.js
 ### Quick start
 
 ```bash
-yarn link
-cd test
-yarn link three-actor
+yarn install
+yarn run start
 ```
 
 ### npm scripts
 
-* `npm run start` - runs the compiler and a server at the same time in dev mode with HMR (Hot Module Replacement) 🔥.
-* `npm run build` - runs the compiler once and generates a production build.
+* `yarn run start` - runs the compiler and a server at the same time in dev mode with HMR (Hot Module Replacement) 🔥.
+* `yarn run build` - runs the compiler once and generates a production build.
 
-### Run test webpages
+### Run test webpage
 
 ```bash
-npx parcel test/testblink.html
+yarn run start
 ```

@@ -20,7 +20,7 @@ node_modules
 
 # Parcel
 .cache/*
-/lib
+
 
 # IDE - VSCode
 .vscode/*

@@ -1,11 +1,11 @@
 {
   "name": "three-actor",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Character framework for three.js",
   "scripts": {
     "start": "npm run clean && parcel test/TestActor.html",
     "build": "npm run clean && tsc",
-    "clean": "rimraf ./dist ./.cache",
+    "clean": "rimraf ./dist ./.cache ./lib",
     "deploy": "npm run build && gh-pages -d dist",
     "test": "jest"
   },
@@ -16,6 +16,9 @@
   ],
   "author": "Paul Elliott",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/jest": "^25.1.1",
     "@types/node": "^13.5.3",
@@ -44,7 +47,7 @@
       }
     ]
   },
-  "dependencies": {
-    "three": "^0.113.2"
-  }
+  "files": [
+    "lib"
+  ]
 }
