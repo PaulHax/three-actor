@@ -1,6 +1,6 @@
-import { Mesh, Audio, AudioAnalyser } from "three";
-import { TalkState, tick } from "./Talk";
-import { getMorphID } from "./Utils3D";
+import { Mesh, Audio, AudioAnalyser } from 'three';
+import { TalkState, tick } from './Talk';
+import { getMorphID } from './Utils3D';
 
 export interface Talk3D {
   morphTargetInfluences: number[];

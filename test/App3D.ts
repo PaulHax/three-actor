@@ -11,9 +11,9 @@ import {
   AmbientLight,
   sRGBEncoding,
   AudioListener
-} from "three";
+} from 'three';
 
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export default class App3D {
   wWidth: number;
@@ -63,7 +63,7 @@ export default class App3D {
     document.body.appendChild(this.renderer.domElement);
 
     // add Events Global
-    window.addEventListener("resize", this.onWindowResize.bind(this), false);
+    window.addEventListener('resize', this.onWindowResize.bind(this), false);
 
     // create Camera
     this.camera = new PerspectiveCamera(75, this.aspect, 0.1, 1000);

@@ -8,7 +8,8 @@
     "clean": "rimraf ./dist ./.cache ./lib",
     "deploy": "npm run build && gh-pages -d dist",
     "test": "jest",
-    "publish": "git push --tags && npm publish"
+    "pub": "git push --tags && npm publish",
+    "gitadd": "git add --all -- :!lib/*"
   },
   "keywords": [
     "TypeScript",

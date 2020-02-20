@@ -1,35 +1,35 @@
-import { makeBlinker, tick } from "../src/Blink";
+import { makeBlinker, tick } from '../src/Blink';
 
 const DOWN_DURATION = 48; //denomiator is milliseconds to move through full range
 const HOLD_DURATION = 48; //denomiator is milliseconds to move through full range
 const UP_DURATION = 72; //denomiator is milliseconds to move through full range
 const BLINK_TOTAL_TIME = DOWN_DURATION + HOLD_DURATION + UP_DURATION;
 
-test("should not start blinking", () => {
+test('should not start blinking', () => {
   const blinker = makeBlinker();
   expect(blinker.blink).toBeCloseTo(0);
 });
 
-test("should blink all the way down after blink down duration", () => {
+test('should blink all the way down after blink down duration', () => {
   const blinker = makeBlinker();
   tick(blinker, 50);
   expect(blinker.blink).toBeCloseTo(1.0);
 });
 
-test("should blink some with small time passed, not just jump to end", () => {
+test('should blink some with small time passed, not just jump to end', () => {
   const blinker = makeBlinker();
   tick(blinker, 10);
   expect(blinker.blink).toBeLessThan(0.9);
 });
 
-test("eye starts to open a little", () => {
+test('eye starts to open a little', () => {
   const blinker = makeBlinker();
   tick(blinker, BLINK_TOTAL_TIME - UP_DURATION + 0.001);
   expect(blinker.blink).toBeLessThan(1);
   expect(blinker.blink).toBeCloseTo(1.0);
 });
 
-test("eye open back up after long time", () => {
+test('eye open back up after long time', () => {
   const blinker = makeBlinker();
   tick(blinker, 1000);
   expect(blinker.blink).toBeCloseTo(0);
@@ -39,13 +39,13 @@ function eyeSpacingTime(): number {
   return 100;
 }
 
-test("eye stays open while waiting for next blink", () => {
+test('eye stays open while waiting for next blink', () => {
   const blinker = makeBlinker();
   tick(blinker, BLINK_TOTAL_TIME + 1, eyeSpacingTime);
   expect(blinker.blink).toBeCloseTo(0);
 });
 
-test("eye starts blinking again", () => {
+test('eye starts blinking again', () => {
   const blinker = makeBlinker();
   tick(blinker, BLINK_TOTAL_TIME + 1, eyeSpacingTime);
   tick(blinker, BLINK_TOTAL_TIME + eyeSpacingTime() + 1, eyeSpacingTime);

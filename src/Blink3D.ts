@@ -1,6 +1,6 @@
-import { Mesh } from "three";
-import { getMorphID } from "./Utils3D";
-import { Blinker, tick } from "./Blink";
+import { Mesh } from 'three';
+import { getMorphID } from './Utils3D';
+import { Blinker, tick } from './Blink';
 
 export interface Blink3D {
   morphTargetInfluences: number[];

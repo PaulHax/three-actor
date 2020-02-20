@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-jest.mock("three");
-// jest.unmock("three/src/math/Box3");
 /* eslint-disable @typescript-eslint/no-unused-vars */
+jest.mock("three");
 import { makeTalk } from "../src/Talk";
 import { makeTalk3D, makeTalkTick } from "../src/Talk3D";
 import {
