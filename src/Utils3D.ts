@@ -1,4 +1,4 @@
-import { Mesh, Audio, AxesHelper, Matrix4, Box3, Material } from "three";
+import { Mesh, Audio, Matrix4, Box3 } from 'three';
 
 export function getMorphID(mesh: Mesh, id: string): number {
   if (
@@ -7,7 +7,7 @@ export function getMorphID(mesh: Mesh, id: string): number {
   ) {
     return mesh.morphTargetDictionary[id];
   } else {
-    throw "Error: Did not find morph with name: " + id;
+    throw 'Error: Did not find morph with name: ' + id;
   }
 }
 
@@ -28,10 +28,4 @@ export function positionSound(mesh: Mesh, audio: Audio<AudioNode>): void {
   }
   box.max.applyMatrix4(m);
   audio.position.copy(box.max);
-
-  const axesHelper = new AxesHelper(5);
-  (axesHelper.material as Material).depthTest = false;
-  (axesHelper.material as Material).depthWrite = false;
-  (axesHelper.material as Material).transparent = false; //makes axis show through mesh, draw order problem on lines?
-  audio.add(axesHelper);
 }

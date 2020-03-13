@@ -27,7 +27,7 @@
     "prettier": "^1.19.1",
     "rimraf": "^3.0.1",
     "ts-jest": "^25.1.0",
-    "typescript": "^3.7.5"
+    "typescript": "^3.8.3"
   },
   "staticFiles": {
     "staticPath": [
@@ -38,6 +38,6 @@
     ]
   },
   "dependencies": {
-    "three": "^0.113.2"
+    "three": "^0.114.0"
   }
 }

@@ -36,7 +36,7 @@
     "prettier": "^1.19.1",
     "rimraf": "^3.0.0",
     "ts-jest": "^25.1.0",
-    "typescript": "^3.7.5"
+    "typescript": "^3.8.3"
   },
   "peerDependencies": {
     "three": "*"
@@ -51,5 +51,8 @@
   },
   "files": [
     "lib"
-  ]
+  ],
+  "dependencies": {
+    "three": "^0.114.0"
+  }
 }

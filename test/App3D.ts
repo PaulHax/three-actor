@@ -10,7 +10,8 @@ import {
   DirectionalLight,
   AmbientLight,
   sRGBEncoding,
-  AudioListener
+  AudioListener,
+  Clock
 } from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -24,6 +25,7 @@ export default class App3D {
   audioListener: AudioListener;
   renderer: WebGLRenderer;
   boundAnimate: FrameRequestCallback;
+  clock: Clock;
   tickFuncs: Function[] = [];
 
   cube: Mesh;
@@ -80,6 +82,8 @@ export default class App3D {
 
     this.scene.add(new GridHelper(10, 10));
 
+    this.clock = new Clock();
+
     this.boundAnimate = this.animate.bind(this);
 
     requestAnimationFrame(this.boundAnimate);
@@ -99,9 +103,10 @@ export default class App3D {
     this.renderer.setSize(this.wWidth, this.wHeight);
   }
 
-  animate(timestamp): void {
-    this.tickFuncs.forEach(element => {
-      element(timestamp);
+  animate(): void {
+    const dt = this.clock.getDelta();
+    this.tickFuncs.forEach(funk => {
+      funk(dt);
     });
 
     this.cube.rotation.y += 0.01;
