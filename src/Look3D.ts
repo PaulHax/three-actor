@@ -11,8 +11,8 @@ import {
 const HEAD_YAW_MAX = 50; // 50 Degrees
 const HEAD_TILT_MAX = 40; // 40 Degrees
 const HEAD_SPEED = MathUtils.DEG2RAD * 200; // 200 Degrees
-const EYE_TWIST_MAX = 30; // todo twist on eyes not needed
-const EYE_SWING_MAX = 20;
+const EYE_TWIST_MAX = 15;
+const EYE_SWING_MAX = 30;
 const EYE_SPEED = HEAD_SPEED * 5; // 200 Degrees
 const EASING_START_ANGLE = MathUtils.DEG2RAD * 15; // 20 Degrees
 const MIN_HEAD_SPEED = MathUtils.DEG2RAD * 15; // 20 Degrees
@@ -77,7 +77,7 @@ const headLimits = makeLims(
 );
 
 const eyeLimits = makeLims(
-  new Vector3().set(0, 0, 1),
+  new Vector3().set(1, 0, 0), //todo something wrong with extream angles and tilted avatar.
   EYE_TWIST_MAX,
   EYE_SWING_MAX
 );
@@ -88,18 +88,33 @@ const eyeLimits = makeLims(
 // http://www.allenchou.net/2018/05/game-math-swing-twist-interpolation-sterp/
 // https://stackoverflow.com/questions/42428136/quaternion-is-flipping-sign-for-very-similar-rotations
 const _v1 = new Vector3();
+const _v2 = new Vector3();
 const _q1 = new Quaternion();
 const _q2 = new Quaternion();
 function constrainSwingTwist(qT: Quaternion, lim: SwingTwistLimits): void {
-  //twist
-  _v1.set(qT.x, qT.y, qT.z); //todo check singularity: rotation by 180 degree if (r.sqrMagnitude < MathUtil.Epsilon) from Allen Chou
-  _v1.projectOnVector(lim.twistAxis);
-  _q1.set(_v1.x, _v1.y, _v1.z, qT.w);
-  _q1.normalize();
-  //swing
-  _q2.copy(_q1).conjugate();
-  _q2.premultiply(qT);
-  _q2.normalize();
+  _v1.set(qT.x, qT.y, qT.z);
+  //Check singularity: rotation by 180 degree
+  if (_v1.lengthSq() < Number.EPSILON) {
+    _v1.copy(lim.twistAxis).applyQuaternion(qT); //rotatedTwistAxis
+    _v2.crossVectors(lim.twistAxis, _v1); //swingAxis
+    if (_v2.lengthSq() > Number.EPSILON) {
+      const swingAngle = _v1.angleTo(lim.twistAxis);
+      _q2.setFromAxisAngle(_v2, swingAngle);
+    } else {
+      // more singularity:  rotation axis parallel to twist axis
+      _q2.set(0, 0, 0, 1);
+    }
+    _q2.setFromAxisAngle(lim.twistAxis, Math.PI);
+  } else {
+    //twist
+    _v1.projectOnVector(lim.twistAxis);
+    _q1.set(_v1.x, _v1.y, _v1.z, qT.w);
+    _q1.normalize();
+    //swing
+    _q2.copy(_q1).conjugate();
+    _q2.premultiply(qT);
+    _q2.normalize();
+  }
   // Clamp twist angle
   _v1.set(_q1.x, _q1.y, _q1.z);
   if (_v1.lengthSq() > lim.twistPow2) {
