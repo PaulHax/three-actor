@@ -46,7 +46,7 @@ loader.load('malcom.glb', function(gltf) {
   });
 
   document.addEventListener('keydown', e => {
-    if (e.code === 'Space') {
+    if (e.code === 'KeyS') {
       soundEmitter.stop();
       soundEmitter.play();
     }
@@ -58,9 +58,9 @@ loader.load('malcom.glb', function(gltf) {
   const idleAction = mixer.clipAction(animations[0]);
   idleAction.play();
 
-  app.tickFuncs.push(dt => {
-    mixer.update(dt);
-  });
+  // app.tickFuncs.push(dt => {
+  //   mixer.update(dt);
+  // });
 
   //look at camera
   const head = gltf.scene.getObjectByName('mixamorigHead');
@@ -73,8 +73,25 @@ loader.load('malcom.glb', function(gltf) {
     .add(new Vector3().setFromMatrixPosition(eyeR.matrixWorld))
     .multiplyScalar(0.5);
   head.worldToLocal(eyeCenter); //new THREE.Vector3(0, 20, 0)
-  const headLook = look3D(attachEffector(eyeCenter, head), [eyeL, eyeR]);
-  app.tickFuncs.push(dt => {
-    headLook(app.camera.position, dt);
-  });
+  let lookTick = null;
+  function toggleLook(): void {
+    if (lookTick === null) {
+      const headLook = look3D(attachEffector(eyeCenter, head), gltf.scene, [
+        eyeL,
+        eyeR
+      ]);
+      lookTick = (dt: number): void => {
+        headLook(app.camera.position, dt);
+      };
+      app.tickFuncs.push(lookTick);
+    } else {
+      app.tickFuncs.splice(app.tickFuncs.indexOf(lookTick), 1);
+      lookTick = null;
+    }
+  }
+  toggleLook();
+  function onkey(e): void {
+    if (e.code == 'Space') toggleLook();
+  }
+  document.addEventListener('keydown', onkey);
 });

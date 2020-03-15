@@ -8,27 +8,31 @@ import {
   MathUtils
 } from 'three';
 
+const BODY_TWIST_MAX = 180;
+const BODY_SWING_MAX = 0;
+const BODY_SPEED = MathUtils.DEG2RAD * 80;
+
 const HEAD_YAW_MAX = 50; // 50 Degrees
-const HEAD_TILT_MAX = 40; // 40 Degrees
+const HEAD_TILT_MAX = 30; // 40 Degrees
 const HEAD_SPEED = MathUtils.DEG2RAD * 200; // 200 Degrees
-const EYE_TWIST_MAX = 15;
+
+const EYE_TWIST_MAX = 10;
 const EYE_SWING_MAX = 30;
 const EYE_SPEED = HEAD_SPEED * 5; // 200 Degrees
-const EASING_START_ANGLE = MathUtils.DEG2RAD * 15; // 20 Degrees
-const MIN_HEAD_SPEED = MathUtils.DEG2RAD * 15; // 20 Degrees
+
+const EASING_START_ANGLE = MathUtils.DEG2RAD * 10; // 20 Degrees
+
+const EFFECTOR_CLOSE_ENOUGH_ANGLE = MathUtils.DEG2RAD * 1;
 
 //Side effects: manipulates parameters
 function rotateTowards(
   targetQuat: Quaternion,
   lastQuat: Quaternion,
-  fullSpeed: number,
+  speed: number,
   dt: number
 ): void {
   //cap speed
   const angleDiff = lastQuat.angleTo(targetQuat);
-  const n = Math.min(angleDiff / EASING_START_ANGLE, 1); //normalize angle change: 0 to 1.  Over lookat process it goes from 1 to 0.
-  // decelerating to zero velocity;
-  const speed = Math.max(n * n * fullSpeed, MIN_HEAD_SPEED); //easing from https://gist.github.com/gre/1650294
   const maxAngleChange = Math.min(speed * dt, angleDiff);
   // equals in >= comparison for when angleDiff smaller than speed, like when hips are close enough
   if (angleDiff >= maxAngleChange) {
@@ -69,6 +73,12 @@ function makeLims(
     swingW: SWING_MAX_W
   };
 }
+
+const bodyLimits = makeLims(
+  new Vector3().set(0, 1, 0),
+  BODY_TWIST_MAX,
+  BODY_SWING_MAX
+);
 
 const headLimits = makeLims(
   new Vector3().set(0, 1, 0),
@@ -163,28 +173,63 @@ export function attachEffector(offset: Vector3, parent: Object3D): Object3D {
   return parent;
 }
 
-export function look3D(head: Object3D, eyes: [Object3D?] = []): Function {
+export function look3D(
+  head: Object3D,
+  body?: Object3D,
+  eyes: [Object3D?] = []
+): Function {
   function makeTick(
     obj: Object3D,
     maxSpeed: number,
-    limits: SwingTwistLimits
+    limits?: SwingTwistLimits
   ): Function {
     const lastQuat = new Quaternion().copy(obj.quaternion);
-    return (target: Vector3, dt: number): void => {
+    return (target: Vector3, dt: number, easer: number): void => {
       obj.lookAt(target);
       //limit angle change speed
-      if (dt) rotateTowards(obj.quaternion, lastQuat, maxSpeed, dt);
-      constrainSwingTwist(obj.quaternion, limits);
+      if (dt) rotateTowards(obj.quaternion, lastQuat, maxSpeed * easer, dt);
+      if (limits) constrainSwingTwist(obj.quaternion, limits);
       lastQuat.copy(obj.quaternion);
     };
   }
-
-  const tickers: Function[] = [makeTick(head, HEAD_SPEED, headLimits)];
+  const tickers: (Function | Function[])[] = [];
+  const eyeTicks: Function[] = [];
   eyes.forEach(eye => {
-    if (eye) tickers.push(makeTick(eye, EYE_SPEED, eyeLimits));
+    eyeTicks.push(makeTick(eye as Object3D, EYE_SPEED, eyeLimits));
   });
+  if (eyeTicks.length >= 1) tickers.push(eyeTicks);
+
+  if (head) tickers.push(makeTick(head, HEAD_SPEED, headLimits));
+
+  if (body) {
+    tickers.push(makeTick(body, BODY_SPEED, bodyLimits));
+  }
+
+  const effector = eyes.length >= 1 ? (eyes[0] as Object3D) : head;
+  const effectorToTarget = new Vector3();
+  const effectorPosWorld = new Vector3();
+  const effectorForward = new Vector3();
 
   return (target: Vector3, dt = 0): void => {
-    tickers.forEach(tick => tick(target, dt));
+    effectorToTarget
+      .copy(target)
+      .sub(effectorPosWorld.setFromMatrixPosition(effector.matrixWorld));
+    effectorForward.setFromMatrixColumn(effector.matrixWorld, 2); // z axis
+    const angleLeft = effectorForward.angleTo(effectorToTarget);
+    if (angleLeft > EFFECTOR_CLOSE_ENOUGH_ANGLE) {
+      for (const [i, tick] of tickers.entries()) {
+        let speedEase = 1;
+        if (i !== 0) {
+          const n = Math.min(angleLeft / EASING_START_ANGLE, 1);
+          speedEase = n * n; //easing from https://gist.github.com/gre/1650294
+        }
+        if (Array.isArray(tick)) {
+          //Move both eyes if moving one
+          tick.forEach(ticky => ticky(target, dt, speedEase));
+        } else {
+          tick(target, dt, speedEase);
+        }
+      }
+    }
   };
 }

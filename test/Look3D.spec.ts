@@ -143,14 +143,14 @@ test('Eyes turn faster than head', () => {
   head.add(eye);
   root.quaternion.setFromEuler(new THREE.Euler(0, Math.PI / 4, 0));
   eye.position.set(0, 1, 0);
-  const target = new THREE.Vector3(1, 0, 5);
+  const target = new THREE.Vector3(0, 1, 5);
 
-  const boneLook = look3D(attachEffector(eye.position, head), [eye]);
+  const boneLook = look3D(attachEffector(eye.position, head), undefined, [eye]);
   eye.updateWorldMatrix(true, false);
-  head.updateWorldMatrix(false, true); //todo hack for animationmixer jerk bug need to update effector
-  boneLook(target, 0.1);
+  // head.updateWorldMatrix(false, true); //todo hack for animationmixer jerk bug need to update effector
+  boneLook(target, 0.02);
 
-  eye.updateWorldMatrix(true, false);
+  eye.updateWorldMatrix(true, false); //updates head as parent
   const effectorToTarget = new Vector3()
     .copy(target)
     .sub(new Vector3().setFromMatrixPosition(eye.matrixWorld));
