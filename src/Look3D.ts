@@ -192,16 +192,24 @@ export function look3D(
       lastQuat.copy(obj.quaternion);
     };
   }
+
+  const objs: { obj: Object3D; quat: Quaternion }[] = []; //copy back quats that got overwriten by AnimationMixer
   const tickers: (Function | Function[])[] = [];
   const eyeTicks: Function[] = [];
   eyes.forEach(eye => {
-    eyeTicks.push(makeTick(eye as Object3D, EYE_SPEED, eyeLimits));
+    const obj = eye as Object3D;
+    objs.push({ obj: obj, quat: obj.quaternion.clone() });
+    eyeTicks.push(makeTick(obj, EYE_SPEED, eyeLimits));
   });
   if (eyeTicks.length >= 1) tickers.push(eyeTicks);
 
-  if (head) tickers.push(makeTick(head, HEAD_SPEED, headLimits));
+  if (head) {
+    objs.push({ obj: head, quat: head.quaternion.clone() });
+    tickers.push(makeTick(head, HEAD_SPEED, headLimits));
+  }
 
   if (body) {
+    objs.push({ obj: body, quat: body.quaternion.clone() });
     tickers.push(makeTick(body, BODY_SPEED, bodyLimits));
   }
 
@@ -211,6 +219,8 @@ export function look3D(
   const effectorForward = new Vector3();
 
   return (target: Vector3, dt = 0): void => {
+    //copy back quats that got overwriten by AnimationMixer
+    objs.forEach(({ obj, quat }) => obj.quaternion.copy(quat));
     effectorToTarget
       .copy(target)
       .sub(effectorPosWorld.setFromMatrixPosition(effector.matrixWorld));
@@ -229,6 +239,34 @@ export function look3D(
         } else {
           tick(target, dt, speedEase);
         }
+      }
+      objs.forEach(({ obj, quat }) => quat.copy(obj.quaternion));
+    }
+  };
+}
+
+export function blendTo(
+  startTarget: Quaternion,
+  endTarget: Quaternion,
+  blendTime: number
+): Function {
+  const start = startTarget.clone();
+  const end = endTarget === startTarget ? new Quaternion() : endTarget;
+  let elapsedTime = 0;
+  let isDone = false;
+  return (dt: number): void => {
+    if (!isDone) {
+      elapsedTime += dt;
+      const percentDone = elapsedTime / blendTime;
+      if (percentDone >= 1) {
+        startTarget.copy(end);
+        isDone = true;
+      } else {
+        if (endTarget === startTarget) {
+          // When something else moves the target and we are blending to it
+          end.copy(endTarget);
+        }
+        startTarget.copy(start).slerp(end, percentDone); // Quaternion.slerp(start, end, startTarget, percentDone);
       }
     }
   };

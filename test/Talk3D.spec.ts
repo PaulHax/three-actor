@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-jest.mock("three");
-import { makeTalk } from "../src/Talk";
-import { makeTalk3D, makeTalkTick } from "../src/Talk3D";
+jest.mock('three');
+import { makeTalk } from '../src/Talk';
+import { makeTalk3D, makeTalkTick } from '../src/Talk3D';
 import {
   Mesh,
   PositionalAudio,
   AudioListener,
   Vector3,
-  AudioAnalyser
-} from "three";
-import * as THREE from "three";
-const { Box3 } = jest.requireActual("three");
+  AudioAnalyser,
+  Geometry
+} from 'three';
+const { Box3 } = jest.requireActual('three');
 
-test("throws when no morph found on mesh", () => {
+test('throws when no morph found on mesh', () => {
   expect(() => {
     makeTalk3D(
       new Mesh(),
-      "mouth",
+      'mouth',
       new PositionalAudio(new AudioListener()),
       0.01,
       makeTalk()
@@ -29,14 +29,14 @@ function makeMeshMock(): Mesh {
   const meshMock = new Mesh();
   meshMock.morphTargetDictionary = { eyes: 0, mouth: 1 };
   meshMock.morphTargetInfluences = [0, 0];
-  meshMock.geometry = new THREE.Geometry();
+  meshMock.geometry = new Geometry();
   meshMock.geometry.boundingBox = new Box3();
   return meshMock;
 }
 
 function mockSoundEmitter(): PositionalAudio {
   const mock = new PositionalAudio(new AudioListener());
-  Object.defineProperty(mock, "position", { get: () => new Vector3() });
+  Object.defineProperty(mock, 'position', { get: () => new Vector3() });
   mock.context = ({
     createAnalyser: jest.fn().mockReturnValue({
       fftSize: 0,
@@ -44,9 +44,7 @@ function mockSoundEmitter(): PositionalAudio {
     })
   } as unknown) as AudioContext;
   mock.getOutput = jest.fn().mockReturnValue({ connect: jest.fn() });
-  // jest.spyOn(mock.position, "get").mockReturnValue(new Vector3());
-  // mock.position = new Vector3();
-  // console.log(mock.position);
+  mock.isPlaying = true;
   return mock;
 }
 
@@ -61,11 +59,11 @@ mockedAudioAnalyser.mockImplementation(() => {
   return mock;
 });
 
-test("finds morph", () => {
+test('finds morph', () => {
   const mesh = makeMeshMock();
   const talk3D = makeTalk3D(
     mesh,
-    "mouth",
+    'mouth',
     mockSoundEmitter(),
     0.01,
     makeTalk(),
@@ -74,12 +72,12 @@ test("finds morph", () => {
   expect(talk3D.morphIndex).toEqual(1); //implmentation test
 });
 
-test("no opening morph until vocals set and time passes", () => {
+test('no opening morph until vocals set and time passes', () => {
   const meshMock = makeMeshMock();
   const talk = makeTalk();
   const talk3D = makeTalk3D(
     meshMock,
-    "mouth",
+    'mouth',
     mockSoundEmitter(),
     0.01,
     talk,
@@ -94,12 +92,12 @@ test("no opening morph until vocals set and time passes", () => {
   }
 });
 
-it("Opens then closes", () => {
+it('Opens then closes', () => {
   const meshMock = makeMeshMock();
   const talk = makeTalk();
   const talk3D = makeTalk3D(
     meshMock,
-    "mouth",
+    'mouth',
     mockSoundEmitter(),
     0.01,
     talk,

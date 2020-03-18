@@ -1,5 +1,14 @@
-import * as THREE from 'three';
-import { Mesh, AnimationMixer, Vector3 } from 'three';
+import {
+  Mesh,
+  AnimationMixer,
+  Vector3,
+  AudioLoader,
+  PositionalAudio,
+  Quaternion
+} from 'three';
+
+// import { Quaternion } from 'three/build/three.module';
+
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import App3D from './App3D';
 import { makeBlink3D, makeBlinkTick } from '../src/Blink3D';
@@ -7,7 +16,7 @@ import { makeBlinker } from '../src/Blink';
 import { makeTalk3D, makeTalkTick } from '../src/Talk3D';
 import { makeTalk } from '../src/Talk';
 import { positionSound } from '../src/Utils3D';
-import { look3D, attachEffector } from '../src/Look3D';
+import { look3D, attachEffector, blendTo } from '../src/Look3D';
 
 const app = new App3D();
 
@@ -21,24 +30,18 @@ loader.load('malcom.glb', function(gltf) {
 
   const body = gltf.scene.getObjectByName('Body') as Mesh;
 
-  // const box = new THREE.BoxHelper(body, new THREE.Color(0xffff00));
-  // app.scene.add(box);
-  // app.tickFuncs.push(() => {
-  //   box.update();
-  // });
-
   const bView = makeBlink3D(body, 'Blink_Left', 'Blink_Right', 2.0);
   const bState = makeBlinker();
   app.tickFuncs.push(makeBlinkTick(bState, bView));
 
   //talking from audio
   const talkState = makeTalk();
-  const soundEmitter = new THREE.PositionalAudio(app.audioListener);
+  const soundEmitter = new PositionalAudio(app.audioListener);
   const talkView = makeTalk3D(body, 'MouthOpen', soundEmitter, 0.01, talkState);
   app.tickFuncs.push(makeTalkTick(talkView, talkState));
   positionSound(body, soundEmitter);
 
-  const audioLoader = new THREE.AudioLoader().setPath('./assets/');
+  const audioLoader = new AudioLoader().setPath('./assets/');
   audioLoader.load('what-to-drink.mp3', function(buffer) {
     soundEmitter.setBuffer(buffer);
     soundEmitter.play(); //play it to init source with domAudioContext.createBufferSource
@@ -52,28 +55,34 @@ loader.load('malcom.glb', function(gltf) {
     }
   });
 
-  // Exported animations
+  const mixerExported = new AnimationMixer(gltf.scene);
   const animations = gltf.animations;
-  const mixer = new AnimationMixer(gltf.scene);
-  const idleAction = mixer.clipAction(animations[0]);
+  const idleAction = mixerExported.clipAction(animations[0]);
   idleAction.play();
+  // const lookaround = mixer.clipAction(animations[1]);
+  // lookaround.play();
 
-  // app.tickFuncs.push(dt => {
-  //   mixer.update(dt);
-  // });
+  console.log(idleAction);
 
-  //look at camera
+  app.tickFuncs.push(dt => {
+    mixerExported.update(dt);
+  });
+
+  //Look at camera
   const head = gltf.scene.getObjectByName('mixamorigHead');
   const eyeL = gltf.scene.getObjectByName('mixamorigLeftEye');
   const eyeR = gltf.scene.getObjectByName('mixamorigRightEye');
+
+  //Find center eye
   eyeL.updateWorldMatrix(true, false);
   eyeR.updateWorldMatrix(false, false); //assuming eyes have same parent
   const eyeCenter = new Vector3()
     .setFromMatrixPosition(eyeL.matrixWorld)
     .add(new Vector3().setFromMatrixPosition(eyeR.matrixWorld))
     .multiplyScalar(0.5);
-  head.worldToLocal(eyeCenter); //new THREE.Vector3(0, 20, 0)
+  head.worldToLocal(eyeCenter);
   let lookTick = null;
+  let blendBackTick = null;
   function toggleLook(): void {
     if (lookTick === null) {
       const headLook = look3D(attachEffector(eyeCenter, head), gltf.scene, [
@@ -83,9 +92,22 @@ loader.load('malcom.glb', function(gltf) {
       lookTick = (dt: number): void => {
         headLook(app.camera.position, dt);
       };
-      app.tickFuncs.push(lookTick);
+      if (blendBackTick) {
+        app.tickFuncs.splice(app.tickFuncs.indexOf(blendBackTick), 1, lookTick);
+      } else {
+        app.tickFuncs.push(lookTick);
+      }
     } else {
-      app.tickFuncs.splice(app.tickFuncs.indexOf(lookTick), 1);
+      const tickers = [
+        blendTo(eyeL.quaternion, new Quaternion(), 0.1),
+        blendTo(eyeR.quaternion, new Quaternion(), 0.1),
+        blendTo(head.quaternion, head.quaternion, 0.3), //samples start quat of IK, then blends back to current exported animation
+        blendTo(gltf.scene.quaternion, new Quaternion(), 0.3)
+      ];
+      blendBackTick = (dt: number): void => {
+        tickers.forEach(tick => tick(dt));
+      };
+      app.tickFuncs.splice(app.tickFuncs.indexOf(lookTick), 1, blendBackTick);
       lookTick = null;
     }
   }

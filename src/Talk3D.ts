@@ -17,7 +17,11 @@ export function makeTalk3D(
 ): Talk3D {
   analyser.analyser.smoothingTimeConstant = 0;
   talk.speach = (): number => {
-    return analyser.getAverageFrequency() * ampFactor;
+    if (soundEmitter.isPlaying) {
+      return analyser.getAverageFrequency() * ampFactor;
+    } else {
+      return 0;
+    }
   };
   return {
     morphTargetInfluences: mesh.morphTargetInfluences as number[],
