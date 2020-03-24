@@ -1,8 +1,8 @@
-export const DOWN_DURATION = 48; //denomiator is milliseconds to move through full range
-export const HOLD_DURATION = 48; //denomiator is milliseconds to move through full range
-export const UP_DURATION = 72; //denomiator is milliseconds to move through full range
-const TIME_BETWEEN_BLINKS_MAX = 30000; //milliseconds
-const SKEW_BLINKS_EARLER = 2; //higher to make distribution earlier
+export const DOWN_DURATION = 0.048;
+export const HOLD_DURATION = 0.048;
+export const UP_DURATION = 0.072;
+const TIME_BETWEEN_BLINKS_MAX = 30;
+const SKEW_BLINKS_EARLER = 3; //higher to make distribution earlier
 
 // https://www.bloopanimation.com/blinking-animation/
 // Todo blink on head turn and start talking
@@ -26,22 +26,23 @@ function calcTimeToNextBlink(): number {
 
 export interface Blinker {
   blink: number;
-  blinkStartTime: number;
+  blinkTime: number;
 }
 
 export function makeBlinker(): Blinker {
   return {
     blink: 0,
-    blinkStartTime: 0
+    blinkTime: 0
   };
 }
 
 export function tick(
   b: Blinker,
-  time: number,
+  dt: number,
   getOpenTime = calcTimeToNextBlink
 ): void {
-  const blinkTime = time - b.blinkStartTime;
+  b.blinkTime += dt;
+  const blinkTime = b.blinkTime;
   if (blinkTime > 0) {
     if (blinkTime < DOWN_DURATION) {
       b.blink = blinkTime / DOWN_DURATION;
@@ -52,8 +53,9 @@ export function tick(
       b.blink = 1 - (blinkTime - DOWN_DURATION - HOLD_DURATION) / UP_DURATION;
     } else {
       b.blink = 0; //done blinking
-      b.blinkStartTime += //set next blink time.
-        DOWN_DURATION + HOLD_DURATION + UP_DURATION + getOpenTime();
+      //set next blink time.
+      b.blinkTime =
+        -1 * (DOWN_DURATION + HOLD_DURATION + UP_DURATION + getOpenTime());
     }
   }
 }

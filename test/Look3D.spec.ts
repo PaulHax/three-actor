@@ -1,5 +1,10 @@
 import { Bone, Vector3, Euler, MathUtils, Object3D, Quaternion } from 'three';
-import { look3D, attachEffector, blendTo } from '../src/Look3D';
+import {
+  look3D,
+  attachEffector,
+  blendTo,
+  EFFECTOR_CLOSE_ENOUGH_ANGLE
+} from '../src/Look3D';
 
 test('constructs', () => {
   const neckBone = new Bone();
@@ -50,12 +55,13 @@ test('Bone looks at target from position offset', () => {
 
 test('when bone is a child, effector works', () => {
   const root = new Object3D();
-  root.quaternion.setFromEuler(new Euler(0, 0, Math.PI / 4));
+  root.quaternion.setFromEuler(new Euler(0, Math.PI / 4, Math.PI / 4));
   const bone = new Bone();
   root.add(bone);
   const offset = new Vector3(0, 1, 0);
   const target = new Vector3(1, 0, 5);
   //Save this cuz bone.matrixWorld will change
+  bone.updateWorldMatrix(true, false);
   const effectorWorldPos = offset.clone().applyMatrix4(bone.matrixWorld);
   const effectorToTarget = new Vector3().copy(target).sub(effectorWorldPos);
 
@@ -66,8 +72,9 @@ test('when bone is a child, effector works', () => {
 
   bone.updateWorldMatrix(true, false);
   const boneForward = new Vector3().setFromMatrixColumn(bone.matrixWorld, 2);
-  const angleToTarget = boneForward.angleTo(effectorToTarget);
-  expect((angleToTarget * 180) / Math.PI).toBeLessThan(1);
+  const angleToTarget =
+    boneForward.angleTo(effectorToTarget) * MathUtils.RAD2DEG;
+  expect(angleToTarget).toBeLessThan(1);
 });
 
 test('Clamp head angles', () => {
@@ -92,35 +99,31 @@ test('Clamp head angles', () => {
   expect((angleToTarget * 180) / Math.PI).toBeGreaterThan(75);
 });
 
-test('Head turns to target over time at some max speed', () => {
+test('Head turns to target over time with easing speed', () => {
   const root = new Object3D();
   const bone = new Bone();
   root.add(bone);
   root.quaternion.setFromEuler(new Euler(0, Math.PI / 4, 0));
   const offset = new Vector3(0, 1, 0);
-  const target = new Vector3(1, 0, 5);
+  const target = new Vector3(1, -0.1, 5);
   //Save this cuz bone.matrixWorld will change
   const effectorWorldPos = offset.clone().applyMatrix4(bone.matrixWorld);
   const effectorToTarget = new Vector3().copy(target).sub(effectorWorldPos);
 
-  //actual stuff to test
   const boneLook = look3D(attachEffector(offset, bone));
-  bone.updateWorldMatrix(false, true); //todo hack for animationmixer jerk bug
-  boneLook(target, 0.1);
-
-  bone.updateWorldMatrix(true, false);
-  const boneForward = new Vector3().setFromMatrixColumn(bone.matrixWorld, 2);
-  let angleToTarget = boneForward.angleTo(effectorToTarget) * MathUtils.RAD2DEG;
-  expect(angleToTarget).toBeGreaterThan(10);
-
-  for (let i = 0; i < 3; i++) {
-    boneLook(target, 0.02);
+  let angleToTargetOld = 2 * Math.PI;
+  let angleDeltaOld = 2 * Math.PI;
+  while (angleToTargetOld > EFFECTOR_CLOSE_ENOUGH_ANGLE * MathUtils.RAD2DEG) {
+    boneLook(target, 0.2);
     bone.updateWorldMatrix(true, false);
     const boneForward = new Vector3().setFromMatrixColumn(bone.matrixWorld, 2);
     const newAngleToTarget =
       boneForward.angleTo(effectorToTarget) * MathUtils.RAD2DEG;
-    expect(newAngleToTarget).toBeLessThan(angleToTarget);
-    angleToTarget = newAngleToTarget;
+    expect(newAngleToTarget).toBeLessThan(angleToTargetOld);
+    const newAngleDelta = angleToTargetOld - newAngleToTarget;
+    expect(newAngleDelta).toBeLessThanOrEqual(angleDeltaOld); //easing
+    angleDeltaOld = newAngleDelta;
+    angleToTargetOld = newAngleToTarget;
   }
 });
 
@@ -134,8 +137,8 @@ test('Eyes turn faster than head', () => {
   eye.position.set(0, 1, 0);
   const target = new Vector3(0, 1, 5);
 
-  const boneLook = look3D(attachEffector(eye.position, head), undefined, [eye]);
-  eye.updateWorldMatrix(true, false);
+  const boneLook = look3D(attachEffector(eye.position, head), [eye]);
+  // eye.updateWorldMatrix(true, false);
   // head.updateWorldMatrix(false, true); //todo hack for animationmixer jerk bug need to update effector
   boneLook(target, 0.02);
 
@@ -157,13 +160,15 @@ test('Blend to some target', () => {
   );
   const newTarget = new Quaternion();
   const blendTick = blendTo(starting, newTarget, 0.1);
-  for (let i = 0; i < 3; i++) {
-    blendTick(0.05);
+  for (let i = 0; i < 2; i++) {
+    const startAngle = starting.angleTo(newTarget);
+    blendTick(0.016);
+    const endAngle = starting.angleTo(newTarget);
+    expect(startAngle).toBeGreaterThan(endAngle);
   }
-  expect(starting.angleTo(newTarget)).toBeCloseTo(0);
 });
 
-test('Blend starting quat into changing current over time', () => {
+test('Blend starting quat into changing current quat over time', () => {
   const starting = new Quaternion().setFromAxisAngle(
     new Vector3(0, 1, 0),
     Math.PI

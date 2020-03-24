@@ -41,14 +41,6 @@
   "peerDependencies": {
     "three": "*"
   },
-  "staticFiles": {
-    "staticPath": [
-      {
-        "staticPath": "assets",
-        "staticOutDir": "assets"
-      }
-    ]
-  },
   "files": [
     "lib"
   ],

@@ -10,19 +10,22 @@ import {
 
 const BODY_TWIST_MAX = 180;
 const BODY_SWING_MAX = 0;
-const BODY_SPEED = MathUtils.DEG2RAD * 80;
+const BODY_SPEED = MathUtils.DEG2RAD * 120;
 
-const HEAD_YAW_MAX = 50; // 50 Degrees
-const HEAD_TILT_MAX = 30; // 40 Degrees
+const HEAD_YAW_MAX = 50;
+const HEAD_TILT_MAX = 30;
 const HEAD_SPEED = MathUtils.DEG2RAD * 200; // 200 Degrees
 
 const EYE_TWIST_MAX = 10;
 const EYE_SWING_MAX = 30;
-const EYE_SPEED = HEAD_SPEED * 5; // 200 Degrees
+const EYE_SPEED = HEAD_SPEED * 300;
 
-const EASING_START_ANGLE = MathUtils.DEG2RAD * 10; // 20 Degrees
+const EASING_START_ANGLE = MathUtils.DEG2RAD * 15;
+const EYE_EASING_START_ANGLE = MathUtils.DEG2RAD * 10;
 
-const EFFECTOR_CLOSE_ENOUGH_ANGLE = MathUtils.DEG2RAD * 1;
+export const EFFECTOR_CLOSE_ENOUGH_ANGLE = MathUtils.DEG2RAD * 0.1;
+
+const EFFECTOR_NAME = 'look3dEffector';
 
 //Side effects: manipulates parameters
 function rotateTowards(
@@ -142,11 +145,13 @@ function constrainSwingTwist(qT: Quaternion, lim: SwingTwistLimits): void {
 }
 
 export function attachEffector(offset: Vector3, parent: Object3D): Object3D {
-  const axesHelper = new AxesHelper(50);
-  (axesHelper.material as Material).depthTest = false;
-  (axesHelper.material as Material).depthWrite = false;
-  (axesHelper.material as Material).transparent = true; //makes axis show through mesh, draw order problem on lines?
-  const effector = axesHelper;
+  // const axesHelper = new AxesHelper(50);
+  // (axesHelper.material as Material).depthTest = false;
+  // (axesHelper.material as Material).depthWrite = false;
+  // (axesHelper.material as Material).transparent = true; //makes axis show through mesh, draw order problem on lines?
+  // const effector = axesHelper;
+  const effector = new Object3D();
+  effector.name = EFFECTOR_NAME;
   parent.add(effector);
   effector.position.copy(offset);
 
@@ -175,73 +180,78 @@ export function attachEffector(offset: Vector3, parent: Object3D): Object3D {
 
 export function look3D(
   head: Object3D,
-  body?: Object3D,
-  eyes: [Object3D?] = []
+  eyes: Object3D[] = [],
+  body?: Object3D
 ): Function {
   function makeTick(
     obj: Object3D,
     maxSpeed: number,
-    limits?: SwingTwistLimits
+    limits?: SwingTwistLimits,
+    easingStartAngle: number = EASING_START_ANGLE
   ): Function {
     const lastQuat = new Quaternion().copy(obj.quaternion);
-    return (target: Vector3, dt: number, easer: number): void => {
+    return (target: Vector3, dt: number, angleLeft: number): void => {
       obj.lookAt(target);
       //limit angle change speed
-      if (dt) rotateTowards(obj.quaternion, lastQuat, maxSpeed * easer, dt);
+      if (dt) {
+        const n = Math.min(angleLeft / easingStartAngle, 1);
+        const speedEase = n * n; //easing from https://gist.github.com/gre/1650294
+        rotateTowards(obj.quaternion, lastQuat, maxSpeed * speedEase, dt);
+      }
       if (limits) constrainSwingTwist(obj.quaternion, limits);
       lastQuat.copy(obj.quaternion);
     };
   }
-
   const objs: { obj: Object3D; quat: Quaternion }[] = []; //copy back quats that got overwriten by AnimationMixer
   const tickers: (Function | Function[])[] = [];
   const eyeTicks: Function[] = [];
   eyes.forEach(eye => {
     const obj = eye as Object3D;
     objs.push({ obj: obj, quat: obj.quaternion.clone() });
-    eyeTicks.push(makeTick(obj, EYE_SPEED, eyeLimits));
+    eyeTicks.push(makeTick(obj, EYE_SPEED, eyeLimits, EYE_EASING_START_ANGLE));
   });
   if (eyeTicks.length >= 1) tickers.push(eyeTicks);
 
-  if (head) {
-    objs.push({ obj: head, quat: head.quaternion.clone() });
-    tickers.push(makeTick(head, HEAD_SPEED, headLimits));
-  }
+  objs.push({ obj: head, quat: head.quaternion.clone() });
+  tickers.push(makeTick(head, HEAD_SPEED, headLimits));
 
   if (body) {
     objs.push({ obj: body, quat: body.quaternion.clone() });
     tickers.push(makeTick(body, BODY_SPEED, bodyLimits));
   }
 
-  const effector = eyes.length >= 1 ? (eyes[0] as Object3D) : head;
+  const effectorRoot = eyes.length >= 1 ? eyes[0] : head;
+  const effectorFound = effectorRoot.getObjectByName(EFFECTOR_NAME);
+  const effector = effectorFound ? effectorFound : effectorRoot;
   const effectorToTarget = new Vector3();
   const effectorPosWorld = new Vector3();
   const effectorForward = new Vector3();
 
   return (target: Vector3, dt = 0): void => {
+    function effectorToTargetAngle(): number {
+      effector.updateWorldMatrix(true, false); //Todo improve performace
+      effectorToTarget
+        .copy(target)
+        .sub(effectorPosWorld.setFromMatrixPosition(effector.matrixWorld));
+      effectorForward.setFromMatrixColumn(effector.matrixWorld, 2); // z axis
+      return effectorForward.angleTo(effectorToTarget);
+    }
+
     //copy back quats that got overwriten by AnimationMixer
     objs.forEach(({ obj, quat }) => obj.quaternion.copy(quat));
-    effectorToTarget
-      .copy(target)
-      .sub(effectorPosWorld.setFromMatrixPosition(effector.matrixWorld));
-    effectorForward.setFromMatrixColumn(effector.matrixWorld, 2); // z axis
-    const angleLeft = effectorForward.angleTo(effectorToTarget);
-    if (angleLeft > EFFECTOR_CLOSE_ENOUGH_ANGLE) {
-      for (const [i, tick] of tickers.entries()) {
-        let speedEase = 1;
-        if (i !== 0) {
-          const n = Math.min(angleLeft / EASING_START_ANGLE, 1);
-          speedEase = n * n; //easing from https://gist.github.com/gre/1650294
-        }
+
+    for (const tick of tickers) {
+      const angleLeft = effectorToTargetAngle();
+      if (angleLeft > EFFECTOR_CLOSE_ENOUGH_ANGLE) {
         if (Array.isArray(tick)) {
           //Move both eyes if moving one
-          tick.forEach(ticky => ticky(target, dt, speedEase));
+          tick.forEach(ticky => ticky(target, dt, angleLeft));
         } else {
-          tick(target, dt, speedEase);
+          tick(target, dt, angleLeft);
         }
       }
-      objs.forEach(({ obj, quat }) => quat.copy(obj.quaternion));
     }
+    objs.forEach(({ obj, quat }) => quat.copy(obj.quaternion)); //save for next frame
   };
 }
 
@@ -257,13 +267,15 @@ export function blendTo(
   return (dt: number): void => {
     if (!isDone) {
       elapsedTime += dt;
-      const percentDone = elapsedTime / blendTime;
-      if (percentDone >= 1) {
+      const t = elapsedTime / blendTime;
+      //https://gist.github.com/gre/1650294
+      const percentDone = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      if (t >= 1) {
         startTarget.copy(end);
         isDone = true;
       } else {
         if (endTarget === startTarget) {
-          // When something else moves the target and we are blending to it
+          // When something else moves the target and we need to blend to the new rotation
           end.copy(endTarget);
         }
         startTarget.copy(start).slerp(end, percentDone); // Quaternion.slerp(start, end, startTarget, percentDone);
