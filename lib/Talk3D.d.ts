@@ -1,5 +1,5 @@
-import { Mesh, Audio, AudioAnalyser } from "three";
-import { TalkState } from "./Talk";
+import { Mesh, Audio, AudioAnalyser } from 'three';
+import { TalkState } from './Talk';
 export interface Talk3D {
     morphTargetInfluences: number[];
     morphIndex: number;

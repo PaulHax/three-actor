@@ -1,5 +1,5 @@
-import { Mesh } from "three";
-import { Blinker } from "./Blink";
+import { Mesh } from 'three';
+import { Blinker } from './Blink';
 export interface Blink3D {
     morphTargetInfluences: number[];
     morphIndexL: number;
