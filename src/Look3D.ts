@@ -16,8 +16,8 @@ const HEAD_YAW_MAX = 50;
 const HEAD_TILT_MAX = 30;
 const HEAD_SPEED = MathUtils.DEG2RAD * 200; // 200 Degrees
 
-const EYE_TWIST_MAX = 10;
-const EYE_SWING_MAX = 30;
+const EYE_TWIST_MAX = 8;
+const EYE_SWING_MAX = 25;
 const EYE_SPEED = HEAD_SPEED * 300;
 
 const EASING_START_ANGLE = MathUtils.DEG2RAD * 15;
@@ -163,7 +163,7 @@ export function attachEffector(offset: Vector3, parent: Object3D): Object3D {
     parent.updateWorldMatrix(true, false);
     _up.setFromMatrixColumn(parent.matrixWorld, 1); // Local y axis
     // Effector position is dependant on last orientation.
-    // ToDo: Causes jerks with animationmixer:
+    // Causes jerks with animationmixer:
     // effector.updateWorldMatrix(true, false);
     // Without updateWorldMatrix, we keep old matrixWorld cuz not updated by animation mixer
     offsetWorld.setFromMatrixPosition(effector.matrixWorld);

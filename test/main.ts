@@ -87,6 +87,7 @@ loader.load('malcom.glb', function(gltf) {
       // const headLook = look3D(headEffector, [eyeL, eyeR]);
       // const headLook = look3D(headEffector);
       lookTick = (dt: number): void => {
+        //headLook(app.cube.position, dt); //FIXME, TODO causes jumps
         headLook(app.camera.position, dt);
       };
       if (blendBackTick) {

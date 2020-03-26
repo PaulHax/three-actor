@@ -9,7 +9,7 @@
     "deploy": "npm run build && gh-pages -d dist",
     "test": "jest",
     "pub": "git push --tags && npm publish",
-    "gitadd": "git add --all -- :!lib/*"
+    "gitadd": "git add --all -- :!lib/* :!dist/*"
   },
   "keywords": [
     "TypeScript",

@@ -46,11 +46,7 @@ export default class App3D {
     this.cube = new Mesh(geometry, material);
     this.cube.position.z = 5;
 
-    this.scene.add(this.cube);
-
-    // const light = new PointLight(0xffffff, 1, 1000);
-    // light.position.set(0, 300, 5);
-    // this.scene.add(light);
+    // this.scene.add(this.cube);
 
     const light = new DirectionalLight(0xffffff);
     light.position.set(1, 1, 1);

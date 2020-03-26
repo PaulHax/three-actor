@@ -2,7 +2,6 @@
 /test/assets
 
 # compiled output
-/dist
 /tmp
 /out-tsc
 
@@ -20,7 +19,7 @@ node_modules
 
 # Parcel
 .cache/*
-
+*.js.map
 
 # IDE - VSCode
 .vscode/*
