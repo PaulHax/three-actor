@@ -1,12 +1,13 @@
 {
   "name": "three-actor",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Character framework for three.js",
   "scripts": {
-    "start": "npm run clean && parcel test/TestActor.html",
+    "start": "npm run clean && parcel test/index.html",
     "build": "npm run clean && tsc",
+    "buildsite": "rimraf ./site && parcel build test/index.html --out-dir site",
+    "deploy": "git subtree push --prefix site origin gh-pages",
     "clean": "rimraf ./dist ./.cache ./lib",
-    "deploy": "npm run build && gh-pages -d dist",
     "test": "jest",
     "pub": "git push --tags && npm publish",
     "gitadd": "git add --all -- :!lib/* :!dist/*"
